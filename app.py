@@ -2,12 +2,20 @@ from flask import Flask, jsonify, request, abort, render_template
 from flask_cors import CORS
 from uuid import uuid4
 import json
+import requests
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # In-memory product store
 data = {}
+
+# Dad joke cache
+dad_joke_cache = {
+    'joke': None,
+    'timestamp': None
+}
 
 @app.route('/')
 def index():
@@ -74,6 +82,49 @@ def delete_product(product_id):
         abort(404)
     del data[product_id]
     return '', 204
+
+@app.route('/dadjoke', methods=['GET'])
+def get_dad_joke():
+    """
+    Fetches a dad joke from an external API and caches it for 30 seconds.
+    Returns the cached joke if it's still valid.
+    """
+    global dad_joke_cache
+    
+    # Check if cache is still valid (within 30 seconds)
+    if (dad_joke_cache['joke'] is not None and 
+        dad_joke_cache['timestamp'] is not None and 
+        datetime.now() - dad_joke_cache['timestamp'] < timedelta(seconds=30)):
+        return jsonify({
+            'joke': dad_joke_cache['joke'],
+            'cached': True
+        }), 200
+    
+    # Fetch new joke from API
+    try:
+        response = requests.get(
+            'https://icanhazdadjoke.com/',
+            headers={'Accept': 'application/json'},
+            timeout=5
+        )
+        response.raise_for_status()
+        joke_data = response.json()
+        
+        # Update cache
+        dad_joke_cache['joke'] = joke_data['joke']
+        dad_joke_cache['timestamp'] = datetime.now()
+        
+        return jsonify({
+            'joke': joke_data['joke'],
+            'cached': False
+        }), 200
+    except Exception as e:
+        # Return a fallback joke if API fails
+        return jsonify({
+            'joke': "Why don't scientists trust atoms? Because they make up everything!",
+            'error': str(e),
+            'cached': False
+        }), 200
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
