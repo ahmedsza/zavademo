@@ -2,9 +2,14 @@ from flask import Flask, jsonify, request, abort, render_template
 from flask_cors import CORS
 from uuid import uuid4
 import json
+import logging
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # In-memory product store
 data = {}
@@ -81,11 +86,19 @@ def submit_feedback():
     if not body or 'name' not in body or 'category' not in body or 'message' not in body:
         abort(400)
     
-    # Log the feedback to the console
-    print(f"Feedback received:")
-    print(f"  Name: {body['name']}")
-    print(f"  Category: {body['category']}")
-    print(f"  Message: {body['message']}")
+    # Validate that fields are not empty
+    name = body['name'].strip() if isinstance(body['name'], str) else ''
+    category = body['category'].strip() if isinstance(body['category'], str) else ''
+    message = body['message'].strip() if isinstance(body['message'], str) else ''
+    
+    if not name or not category or not message:
+        abort(400)
+    
+    # Log the feedback
+    logger.info(f"Feedback received:")
+    logger.info(f"  Name: {name}")
+    logger.info(f"  Category: {category}")
+    logger.info(f"  Message: {message}")
     
     return jsonify({'status': 'success', 'message': 'Feedback submitted successfully'}), 200
 
