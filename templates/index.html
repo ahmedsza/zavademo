@@ -389,12 +389,72 @@
 
     <!-- Contact Us Page -->
     <div id="contactPage" class="page-section">
-        <section class="min-h-screen bg-white flex items-center justify-center">
-            <div class="text-center px-4">
-                <div class="text-8xl mb-8">💬</div>
-                <h2 class="text-4xl font-black tracking-tight text-black mb-4">CONTACT US</h2>
-                <p class="text-2xl text-gray-400 mb-4">COMING SOON</p>
-                <p class="text-gray-600 max-w-md mx-auto">We're setting up our contact channels to serve you better.</p>
+        <section class="min-h-screen bg-white py-20">
+            <div class="max-w-2xl mx-auto px-4">
+                <div class="text-center mb-12">
+                    <div class="text-6xl mb-6">💬</div>
+                    <h2 class="text-4xl font-black tracking-tight text-black mb-4">CONTACT US</h2>
+                    <p class="text-gray-600">We'd love to hear from you. Send us a message and we'll respond as soon as possible.</p>
+                </div>
+                
+                <form id="contactForm" onsubmit="handleContactFormSubmit(event)" class="bg-white shadow-lg rounded-lg p-8 space-y-6">
+                    <!-- Name Field -->
+                    <div>
+                        <label for="contactName" class="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
+                        <input 
+                            type="text" 
+                            id="contactName" 
+                            name="name" 
+                            required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                            placeholder="Enter your name"
+                        />
+                    </div>
+                    
+                    <!-- Category Field -->
+                    <div>
+                        <label for="contactCategory" class="block text-sm font-semibold text-gray-700 mb-2">Category *</label>
+                        <select 
+                            id="contactCategory" 
+                            name="category" 
+                            required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                        >
+                            <option value="">Select a category</option>
+                            <option value="general">General Inquiry</option>
+                            <option value="support">Technical Support</option>
+                            <option value="feedback">Feedback</option>
+                            <option value="sales">Sales</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Message Field -->
+                    <div>
+                        <label for="contactMessage" class="block text-sm font-semibold text-gray-700 mb-2">Message *</label>
+                        <textarea 
+                            id="contactMessage" 
+                            name="message" 
+                            required
+                            rows="6"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all resize-none"
+                            placeholder="Enter your message"
+                        ></textarea>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div>
+                        <button 
+                            type="submit" 
+                            class="w-full px-6 py-4 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 transition-all duration-300 text-sm tracking-wider"
+                        >
+                            SUBMIT
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Success Message Container -->
+                <div id="contactAlertContainer" class="mt-6"></div>
             </div>
         </section>
     </div>
@@ -506,10 +566,54 @@
         }
 
         // Contact Form Handler
-        function handleContactSubmit(event) {
+        async function handleContactFormSubmit(event) {
             event.preventDefault();
-            alert('Thank you for your message! We will get back to you soon.');
-            event.target.reset();
+            
+            const form = event.target;
+            const formData = {
+                name: form.name.value,
+                category: form.category.value,
+                message: form.message.value
+            };
+            
+            try {
+                const response = await fetch('/SubmitFeedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to submit feedback');
+                }
+                
+                const result = await response.json();
+                
+                // Show success message
+                showContactAlert('Thank you for your message! We will get back to you soon.', 'success');
+                
+                // Reset form
+                form.reset();
+            } catch (error) {
+                showContactAlert('Error submitting feedback: ' + error.message, 'error');
+            }
+        }
+        
+        // Show Alert Message for Contact Form
+        function showContactAlert(message, type = 'success') {
+            const alertContainer = document.getElementById('contactAlertContainer');
+            const alert = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-50 border-green-500 text-green-800' : 'bg-red-50 border-red-500 text-red-800';
+            alert.className = `${bgColor} border-l-4 p-4 rounded animate-slide-down`;
+            alert.textContent = message;
+            alert.setAttribute('role', 'alert');
+            alertContainer.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
         }
 
         // API Configuration
