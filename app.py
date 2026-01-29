@@ -2,9 +2,14 @@ from flask import Flask, jsonify, request, abort, render_template
 from flask_cors import CORS
 from uuid import uuid4
 import json
+import logging
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # In-memory product store
 data = {}
@@ -74,6 +79,28 @@ def delete_product(product_id):
         abort(404)
     del data[product_id]
     return '', 204
+
+@app.route('/SubmitFeedback', methods=['POST'])
+def submit_feedback():
+    body = request.get_json()
+    if not body or 'name' not in body or 'category' not in body or 'message' not in body:
+        abort(400)
+    
+    # Validate that fields are not empty
+    name = body['name'].strip() if isinstance(body['name'], str) else ''
+    category = body['category'].strip() if isinstance(body['category'], str) else ''
+    message = body['message'].strip() if isinstance(body['message'], str) else ''
+    
+    if not name or not category or not message:
+        abort(400)
+    
+    # Log the feedback
+    logger.info(f"Feedback received:")
+    logger.info(f"  Name: {name}")
+    logger.info(f"  Category: {category}")
+    logger.info(f"  Message: {message}")
+    
+    return jsonify({'status': 'success', 'message': 'Feedback submitted successfully'}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
