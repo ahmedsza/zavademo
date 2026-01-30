@@ -1,13 +1,23 @@
+
 from flask import Flask, jsonify, request, abort, render_template
 from flask_cors import CORS
 from uuid import uuid4
 import json
+import requests
+import csv
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # In-memory product store
 data = {}
+
+# Dad joke cache
+dad_joke_cache = {
+    'joke': None,
+    'timestamp': None
+}
 
 @app.route('/')
 def index():
@@ -17,7 +27,7 @@ def index():
 def get_data():
     with open('sampledata.json', 'r') as file:
         data_content = json.load(file)
-        users = data_content.get('user')
+        users = data_content.get('users')
         # Intentionally cause a complex error: trying to iterate over a non-iterable
         # and perform operations that will fail
         for user in users:
@@ -74,6 +84,71 @@ def delete_product(product_id):
         abort(404)
     del data[product_id]
     return '', 204
+
+@app.route('/dadjoke', methods=['GET'])
+def get_dad_joke():
+    """
+    Fetches a dad joke from an external API and caches it for 30 seconds.
+    Returns the cached joke if it's still valid.
+    """
+    global dad_joke_cache
+    
+    # Check if cache is still valid (within 30 seconds)
+    if (dad_joke_cache['joke'] is not None and 
+        dad_joke_cache['timestamp'] is not None and 
+        datetime.now() - dad_joke_cache['timestamp'] < timedelta(seconds=30)):
+        return jsonify({
+            'joke': dad_joke_cache['joke'],
+            'cached': True
+        }), 200
+    
+    # Fetch new joke from API
+    try:
+        response = requests.get(
+            'https://icanhazdadjoke.com/',
+            headers={'Accept': 'application/json'},
+            timeout=5
+        )
+        response.raise_for_status()
+        joke_data = response.json()
+        
+        # Update cache
+        dad_joke_cache['joke'] = joke_data['joke']
+        dad_joke_cache['timestamp'] = datetime.now()
+        
+        return jsonify({
+            'joke': joke_data['joke'],
+            'cached': False
+        }), 200
+    except Exception as e:
+        # Return a fallback joke if API fails
+        return jsonify({
+            'joke': "Why don't scientists trust atoms? Because they make up everything!",
+            'error': str(e),
+            'cached': False
+        }), 200
+
+@app.route('/api/sales-data', methods=['GET'])
+def get_sales_data():
+    """
+    Reads sales data from sample_data.csv and returns it as JSON.
+    Returns all sales records for dashboard visualization and filtering.
+    """
+    try:
+        sales_data = []
+        with open('sample_data.csv', 'r', encoding='utf-8') as file:
+            csv_reader = csv.DictReader(file)
+            for row in csv_reader:
+                sales_data.append({
+                    'year': row['Year'],
+                    'quarter': row['Quarter'],
+                    'category': row['Category'],
+                    'amount': float(row['Amount']),
+                    'location': row['Location']
+                })
+        return jsonify(sales_data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

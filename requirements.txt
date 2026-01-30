@@ -5,3 +5,4 @@ flask-cors
 SQLAlchemy>=1.4.0
 pytest
 selenium
+requests
