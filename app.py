@@ -1,8 +1,10 @@
+
 from flask import Flask, jsonify, request, abort, render_template
 from flask_cors import CORS
 from uuid import uuid4
 import json
 import requests
+import csv
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
@@ -25,7 +27,7 @@ def index():
 def get_data():
     with open('sampledata.json', 'r') as file:
         data_content = json.load(file)
-        users = data_content.get('user')
+        users = data_content.get('users')
         # Intentionally cause a complex error: trying to iterate over a non-iterable
         # and perform operations that will fail
         for user in users:
@@ -125,6 +127,28 @@ def get_dad_joke():
             'error': str(e),
             'cached': False
         }), 200
+
+@app.route('/api/sales-data', methods=['GET'])
+def get_sales_data():
+    """
+    Reads sales data from sample_data.csv and returns it as JSON.
+    Returns all sales records for dashboard visualization and filtering.
+    """
+    try:
+        sales_data = []
+        with open('sample_data.csv', 'r', encoding='utf-8') as file:
+            csv_reader = csv.DictReader(file)
+            for row in csv_reader:
+                sales_data.append({
+                    'year': row['Year'],
+                    'quarter': row['Quarter'],
+                    'category': row['Category'],
+                    'amount': float(row['Amount']),
+                    'location': row['Location']
+                })
+        return jsonify(sales_data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

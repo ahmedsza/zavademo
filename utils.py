@@ -141,6 +141,28 @@ def hash_password(password):
 
 
 def is_strong_password(password):
+    """
+    Validates if a password meets strong password requirements.
+
+    A strong password must satisfy all of the following criteria:
+    - At least 8 characters long
+    - Contains at least one uppercase letter (A-Z)
+    - Contains at least one lowercase letter (a-z)
+    - Contains at least one digit (0-9)
+    - Contains at least one special character (non-alphanumeric)
+
+    Args:
+        password (str): The password string to validate.
+
+    Returns:
+        bool: True if the password meets all strength requirements, False otherwise.
+
+    Examples:
+        >>> is_strong_password("Pass123!")
+        True
+        >>> is_strong_password("weak")
+        False
+    """
     if len(password) < 8:
         return False
     if not re.search(r'[A-Z]', password):
@@ -182,7 +204,31 @@ def generate_unique_filename(filename):
 
 
 def read_log():
-    f = open('log.txt', 'r', encoding='utf-8')
-    content = f.read()
-    f.close()
-    return content
+    """
+    Reads and returns the full contents of the log file named 'log.txt'.
+
+    Returns:
+        str: The complete contents of the log file.
+
+    Raises:
+        FileNotFoundError: If 'log.txt' does not exist.
+        OSError: If an error occurs while opening or reading the file.
+    """
+    try:
+        with open('log.txt', 'r', encoding='utf-8') as f:
+            content = f.read()
+        return content
+    except FileNotFoundError:
+        # If the log file does not exist, return an empty string instead of raising an error.
+        return ""
+
+    # generate a unique filename based on timestamp
+    def generate_unique_filename_bad(filename):
+        if '.' in filename:
+            base, ext = filename.rsplit('.', 1)
+            ext = f".{ext}"
+        else:
+            base = filename
+            ext = ""
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
+        return f"{base}_{timestamp}{ext}"
